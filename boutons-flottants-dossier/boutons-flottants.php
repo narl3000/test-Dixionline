@@ -2,37 +2,36 @@
 /*
 Plugin Name: Boutons Flottants
 Description: Plugin pour créer plusieurs boutons flottants personnalisables.
-Version: 1.0
+Version: 1.1
 Author: Naël Gatat
 */
 
-// Fonction qui charge les icônes dans l'interface utilisateur
+// Charge Font Awesome pour les icônes dans l'interface utilisateur
 function boutons_flottants_enqueue_icons() {
-    wp_enqueue_style('dashicons');
     wp_enqueue_style('font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
 }
 add_action('wp_enqueue_scripts', 'boutons_flottants_enqueue_icons');
 
-// Fonction qui crée un menu dans le tableau de bord admin pour gérer les boutons flottants
+// Crée une page de menu dans le tableau de bord pour la gestion des boutons
 function boutons_flottants_create_menu() {
     add_menu_page(
-        'Boutons Flottants',  // Titre affiché en haut de la page 
-        'Boutons Flottants',  // Texte du menu dans la barre de navigation du tableau de bord
-        'manage_options',     // Permissions nécessaires pour accéder à cette page (ici, être connecté en tant qu'admin)
-        'boutons-flottants',  // Identifiant unique pour la page
-        'boutons_flottants_settings_page', // Fonction qui génère le contenu de la page d'administration
-        'dashicons-admin-generic', // Icône pour le menu
-        100 // Position du menu dans le tableau de bord
+        'Boutons Flottants', // Titre qui apparaîtra en haut de la page d’administration
+        'Boutons Flottants', // Texte du menu dans le tableau de bord WordPress
+        'manage_options',    // Droit d’accès requis pour voir ce menu (administrateurs)
+        'boutons-flottants', // Identifiant unique de la page
+        'boutons_flottants_settings_page', // Génère le contenu de la page
+        'dashicons-admin-generic', // Icône associée au menu
+        100 // Position dans le menu du tableau de bord
     );
 }
 add_action('admin_menu', 'boutons_flottants_create_menu');
 
-// Fonction qui génère la page admin pour ajouter, modifier et supprimer les boutons
+// Affiche la page d’administration pour ajouter, modifier et supprimer les boutons
 function boutons_flottants_settings_page() {
-    // Récupère les boutons enregistrés, sinon renvoie un tableau vide
+    // Récupère les boutons sauvegardés ou retourne un tableau vide s’il n’y en a pas
     $buttons = get_option('boutons_flottants', []);
-    
-    // Liste des icônes, avec des noms clairs
+
+    // Définit une liste d’icônes disponibles pour les boutons
     $icon_names = [
         'fas fa-home' => 'Maison',
         'fas fa-user' => 'Utilisateur',
@@ -44,20 +43,20 @@ function boutons_flottants_settings_page() {
         'fas fa-map-marker-alt' => 'Emplacement'
     ];
 
-    // Différentes options de position pour les boutons, selectionnable par l'admin
+    // Définit les options de positionnement des boutons
     $position_names = [
         'bottom-right' => 'En bas à droite',
         'bottom-left' => 'En bas à gauche',
         'top-right' => 'En haut à droite',
         'top-left' => 'En haut à gauche'
     ];
-    // Mode par défaut : ajout d'un nouveau bouton + index du bouton à éditer (par défaut: aucun)
-    $edit_mode = false; 
-    $edit_index = -1; 
 
-    // Gestion du formulaire pour ajouter ou modifier un bouton
+    // Détermine si le mode "édition" est actif
+    $edit_mode = false;
+    $edit_index = -1;
+
+    // Ajout ou modification d’un bouton en fonction des données du formulaire soumis
     if (isset($_POST['add_button'])) {
-        // Création d'un nouveau bouton avec les champs du formulaire, en vérifiant la sécurité des données
         $new_button = [
             'text' => sanitize_text_field($_POST['button_text']),
             'bg_color' => sanitize_hex_color($_POST['button_bg_color']),
@@ -66,36 +65,33 @@ function boutons_flottants_settings_page() {
             'position' => sanitize_text_field($_POST['button_position']),
         ];
 
-        // Vérifie si on est en mode édition ou ajout
+        // Mise à jour ou ajout d’un nouveau bouton selon l'index
         if (isset($_POST['edit_index']) && $_POST['edit_index'] !== '') {
-            // Mode édition : remplace le bouton existant à l'index donné
             $edit_index = intval($_POST['edit_index']);
             $buttons[$edit_index] = $new_button;
         } else {
-            // Mode ajout : ajoute le nouveau bouton à la fin du tableau
             $buttons[] = $new_button;
         }
 
-        // Sauvegarde la liste des boutons dans la base de données
         update_option('boutons_flottants', $buttons);
     }
 
-    // Gestion de la suppression d'un bouton
+    // Suppression d’un bouton
     if (isset($_POST['delete_button'])) {
-        $index = intval($_POST['button_index']); // Récupère l'index du bouton à supprimer
-        unset($buttons[$index]); // Supprime le bouton en question du tableau
-        $buttons = array_values($buttons); // Réindexe le tableau pour éviter les "trous" dans les indices
-        update_option('boutons_flottants', $buttons); // Met à jour les boutons dans la base de données
+        $index = intval($_POST['button_index']);
+        unset($buttons[$index]);
+        $buttons = array_values($buttons); // Réindexe le tableau après suppression
+        update_option('boutons_flottants', $buttons);
     }
 
-    // Activation du mode édition lorsqu'on clique sur "Modifier"
+    // Active le mode édition pour un bouton spécifique
     if (isset($_POST['edit_button'])) {
-        $edit_mode = true; // On passe en mode édition
-        $edit_index = intval($_POST['button_index']); // Récupère l'index du bouton à modifier
-        $button_to_edit = $buttons[$edit_index]; // Charge les données du bouton pour remplir le formulaire
+        $edit_mode = true;
+        $edit_index = intval($_POST['button_index']);
+        $button_to_edit = $buttons[$edit_index];
     }
-
     ?>
+
     <div class="wrap">
         <h1>Gestion des Boutons Flottants</h1>
         
@@ -141,7 +137,7 @@ function boutons_flottants_settings_page() {
             <?php endif; ?>
         </form>
         
-        <!-- Liste des boutons existants pour les afficher, modifier ou bien les supprimer -->
+        <!-- Liste des boutons existants avec options de modification ou suppression -->
         <h2>Boutons Actuels</h2>
         <?php if (!empty($buttons)): ?>
             <table class="wp-list-table widefat fixed striped">
@@ -181,24 +177,24 @@ function boutons_flottants_settings_page() {
     <?php
 }
 
-// Fonction qui affiche les boutons flottants côté utilisateur, en tenant compte de leur position
+// Affiche les boutons flottants sur le site côté utilisateur
 function boutons_flottants_display_buttons() {
     $buttons = get_option('boutons_flottants', []);
     
-    // On regroupe les boutons par position (haut, bas, gauche, droite) pour un affichage organisé
+    // Groupe les boutons par position pour un meilleur positionnement
     $grouped_buttons = [];
     foreach ($buttons as $button) {
         $grouped_buttons[$button['position']][] = $button;
     }
     
-    // Pour chaque groupe de boutons, on ajoute un décalage pour éviter qu'ils ne se superpose, ce qui autrement rendait illisible la lecture des boutons
+    // Crée un décalage pour éviter la superposition des boutons qui rendait le tout illisible
     foreach ($grouped_buttons as $position => $buttons) {
-        $offset = 0; // Point de départ pour le décalage des boutons
+        $offset = 0;
 
         foreach ($buttons as $button) {
             $position_style = '';
             
-            // Définir la position du bouton en fonction de son emplacement (haut, bas, gauche, droite)
+            // Applique le style de positionnement en fonction de la position
             switch ($position) {
                 case 'bottom-right':
                     $position_style = 'bottom:' . (20 + $offset) . 'px; right:20px;';
@@ -214,21 +210,15 @@ function boutons_flottants_display_buttons() {
                     break;
             }
 
-            // Génère le HTML pour chaque bouton avec ses styles et couleurs
+            // Génère le HTML pour chaque bouton, avec icône et texte
             echo '<div class="boutons-flottants-button" style="position:fixed; ' . $position_style . ' background-color:' . esc_attr($button['bg_color'] ?? '#0073aa') . '; color:' . esc_attr($button['text_color'] ?? '#ffffff') . '; padding:10px; border-radius:5px; cursor:pointer; display:flex; align-items:center;">
-                <i class="' . esc_attr($button['icon'] ?? '') . '"></i> ' . esc_html($button['text'] ?? '') . '
+                <i class="' . esc_attr($button['icon'] ?? '') . '"></i>&nbsp;' . esc_html($button['text'] ?? '') . '
             </div>';
             
-            // Ajoute un décalage pour que chaque bouton soit un peu plus haut/bas que le précédent
+            // Ajoute un espace entre chaque bouton
             $offset += 60;
         }
     }
 }
-// Fonction qui ajoute la fonction boutons_flottants_display_buttons au hook wp_footer. Ce hook est déclenché dans le pied de page de chaque page du site
 add_action('wp_footer', 'boutons_flottants_display_buttons');
-
-/*
-Conclusion :
-Ce plugin crée une interface dans le tableau de bord pour ajouter, modifier et supprimer des boutons flottants personnalisables (texte, couleur, icône, position). 
-Les boutons sont enregistrés et affichés sur toutes les pages du site, avec leur position et styles configurés par l'admin.
-*/
+?>
